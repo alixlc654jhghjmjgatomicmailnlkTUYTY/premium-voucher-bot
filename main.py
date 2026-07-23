@@ -1,17 +1,26 @@
 import asyncio
-import logging
+import os
 
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-
-from config import BOT_TOKEN, ADMIN_ID, WELCOME_TEXT
-
-
-logging.basicConfig(level=logging.INFO)
+from dotenv import load_dotenv
 
 
-bot = Bot(token=BOT_TOKEN)
+# =========================
+# تنظیمات
+# =========================
+
+load_dotenv()
+
+# توکن ربات تلگرام را اینجا بگذار
+BOT_TOKEN = "اینجا_توکن_ربات"
+
+# آیدی ادمین
+ADMIN_ID = 8369041514
+
+
+bot = Bot(BOT_TOKEN)
 dp = Dispatcher()
 
 
@@ -23,24 +32,52 @@ def main_menu():
 
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
+
             [
                 InlineKeyboardButton(
                     text="🎁 دریافت ووچر",
-                    callback_data="buy_voucher"
+                    callback_data="get_voucher"
                 )
             ],
+
             [
                 InlineKeyboardButton(
                     text="💰 موجودی من",
                     callback_data="balance"
+                ),
+
+                InlineKeyboardButton(
+                    text="🛒 خرید ووچر",
+                    callback_data="buy"
                 )
             ],
+
             [
                 InlineKeyboardButton(
-                    text="👤 پشتیبانی",
+                    text="📦 سفارش‌های من",
+                    callback_data="orders"
+                ),
+
+                InlineKeyboardButton(
+                    text="👤 حساب کاربری",
+                    callback_data="profile"
+                )
+            ],
+
+            [
+                InlineKeyboardButton(
+                    text="❓ سوالات متداول",
+                    callback_data="faq"
+                )
+            ],
+
+            [
+                InlineKeyboardButton(
+                    text="☎️ پشتیبانی",
                     callback_data="support"
                 )
             ]
+
         ]
     )
 
@@ -49,22 +86,81 @@ def main_menu():
 
 
 # =========================
-# شروع ربات
+# پنل ادمین
 # =========================
+
+
+def admin_menu():
+
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+
+            [
+                InlineKeyboardButton(
+                    text="👑 مدیریت کاربران",
+                    callback_data="users"
+                )
+            ],
+
+            [
+                InlineKeyboardButton(
+                    text="📊 آمار ربات",
+                    callback_data="stats"
+                )
+            ],
+
+            [
+                InlineKeyboardButton(
+                    text="🎁 ارسال ووچر",
+                    callback_data="send_voucher"
+                )
+            ],
+
+            [
+                InlineKeyboardButton(
+                    text="⬅️ برگشت",
+                    callback_data="back"
+                )
+            ]
+
+        ]
+    )
+
+    return keyboard
+
+
+
+# =========================
+# استارت
+# =========================
+
 
 @dp.message(Command("start"))
 async def start(message: types.Message):
 
+    text = """
+
+🤖 خوش آمدید به Premium Voucher
+
+🎁 خرید و دریافت ووچر پریمیوم
+⚡ سریع و امن
+💎 سرویس ویژه کاربران
+
+یکی از گزینه‌ها را انتخاب کنید 👇
+
+"""
+
     await message.answer(
-        WELCOME_TEXT,
+        text,
         reply_markup=main_menu()
     )
 
 
 
 # =========================
-# پنل ادمین
+# ادمین
 # =========================
+
 
 @dp.message(Command("admin"))
 async def admin(message: types.Message):
@@ -72,33 +168,9 @@ async def admin(message: types.Message):
     if message.from_user.id != ADMIN_ID:
         return
 
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="👑 مدیریت",
-                    callback_data="admin_panel"
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    text="📊 آمار کاربران",
-                    callback_data="users_stats"
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    text="🎁 ارسال ووچر",
-                    callback_data="send_voucher"
-                )
-            ]
-        ]
-    )
-
-
     await message.answer(
-        "👑 پنل مدیریت Premium Voucher",
-        reply_markup=keyboard
+        "👑 پنل مدیریت فعال شد",
+        reply_markup=admin_menu()
     )
 
 
@@ -107,54 +179,67 @@ async def admin(message: types.Message):
 # دکمه ها
 # =========================
 
+
 @dp.callback_query()
 async def buttons(callback: types.CallbackQuery):
 
     data = callback.data
 
 
-    if data == "buy_voucher":
+    if data == "get_voucher":
 
         await callback.message.answer(
-            "🎁 بخش خرید ووچر\n\n"
-            "در حال اتصال به سیستم فروش..."
+            "🎁 درخواست ووچر ثبت شد\n\n⏳ در حال بررسی..."
         )
 
 
     elif data == "balance":
 
         await callback.message.answer(
-            "💰 موجودی شما:\n"
-            "در حال بررسی..."
+            "💰 موجودی شما:\n\n0 تومان"
+        )
+
+
+    elif data == "buy":
+
+        await callback.message.answer(
+            "🛒 بخش خرید ووچر\n\nبه زودی فعال می‌شود"
+        )
+
+
+    elif data == "orders":
+
+        await callback.message.answer(
+            "📦 سفارش‌های شما خالی است"
+        )
+
+
+    elif data == "profile":
+
+        await callback.message.answer(
+            f"👤 پروفایل شما\n\nID: {callback.from_user.id}"
         )
 
 
     elif data == "support":
 
         await callback.message.answer(
-            "👤 پشتیبانی:\n"
-            "@آیدی_پشتیبانی"
+            "☎️ پشتیبانی:\n@your_support"
         )
 
 
-    elif data == "admin_panel":
+    elif data == "faq":
 
         await callback.message.answer(
-            "👑 پنل مدیریت فعال شد"
+            "❓ سوالات متداول\n\nبه زودی تکمیل می‌شود"
         )
 
 
-    elif data == "users_stats":
+    elif data == "back":
 
         await callback.message.answer(
-            "📊 تعداد کاربران: در حال دریافت..."
-        )
-
-
-    elif data == "send_voucher":
-
-        await callback.message.answer(
-            "🎁 ارسال ووچر فعال شد"
+            "منوی اصلی",
+            reply_markup=main_menu()
         )
 
 
@@ -166,9 +251,10 @@ async def buttons(callback: types.CallbackQuery):
 # اجرا
 # =========================
 
+
 async def main():
 
-    print("🤖 Premium Voucher Bot Started")
+    print("🤖 Premium Voucher Started")
 
     await dp.start_polling(bot)
 
