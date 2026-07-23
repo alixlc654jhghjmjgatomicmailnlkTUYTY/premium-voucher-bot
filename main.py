@@ -21,13 +21,11 @@ from admin import (
 
 from payment import create_payment
 
-from payment_callback import check_and_complete
+from premium_api import get_voucher
 
 
 
-logging.basicConfig(
-    level=logging.INFO
-)
+logging.basicConfig(level=logging.INFO)
 
 
 bot = Bot(
@@ -56,13 +54,12 @@ async def start(message: types.Message):
 
 🎁 خرید ووچر
 💳 شارژ کیف پول
-⚡ تحویل سریع
+⚡ تحویل سریع و خودکار
 
 انتخاب کنید 👇
         """,
         reply_markup=main_menu()
     )
-
 
 
 
@@ -77,15 +74,12 @@ async def admin(message: types.Message):
 
 
 
-
 # ======================
 # CALLBACK
 # ======================
 
 @dp.callback_query()
-async def callback_handler(
-        call: types.CallbackQuery
-):
+async def callback_handler(call: types.CallbackQuery):
 
     data = call.data
 
@@ -94,7 +88,6 @@ async def callback_handler(
     if data.startswith("admin_"):
 
         await admin_callback(call)
-
         return
 
 
@@ -106,10 +99,11 @@ async def callback_handler(
 
         await call.message.edit_text(
             """
-🎁 انتخاب محصول:
+🎁 محصول مورد نظر را انتخاب کنید:
             """,
             reply_markup=products_menu()
         )
+
 
 
 
@@ -128,71 +122,104 @@ async def callback_handler(
 
 
 
-    # ساخت پرداخت
 
-    elif data.startswith("charge_"):
+    # خرید محصول
 
-
-        amount = int(
-            data.split("_")[1]
-        )
+    elif data.startswith("premium_"):
 
 
-        payment = create_payment(
-            amount,
+        products = {
+
+            "premium_1":
+            ("تلگرام پریمیوم 1 ماهه", 100000),
+
+            "premium_3":
+            ("تلگرام پریمیوم 3 ماهه", 250000),
+
+            "premium_6":
+            ("تلگرام پریمیوم 6 ماهه", 450000)
+
+        }
+
+
+        product, price = products[data]
+
+
+        balance = database.get_balance(
             call.from_user.id
         )
 
 
-        if "error" in payment:
+
+        if balance < price:
+
 
             await call.message.answer(
-                "❌ خطا در ساخت پرداخت"
+                """
+❌ موجودی کافی نیست
+
+ابتدا کیف پول خود را شارژ کنید.
+"""
             )
 
             return
 
 
 
-        database.add_transaction(
 
+
+        await call.message.answer(
+            "⏳ در حال دریافت ووچر..."
+        )
+
+
+
+        voucher = get_voucher(product)
+
+
+
+        if not voucher.get("success"):
+
+
+            await call.message.answer(
+                """
+❌ ووچر موجود نیست.
+"""
+            )
+
+            return
+
+
+
+
+
+        database.add_balance(
             call.from_user.id,
-
-            amount,
-
-            payment["authority"]
-
+            -price
         )
 
 
-        await call.message.answer(
+        database.add_order(
+            call.from_user.id,
+            product,
+            price
+        )
 
+
+
+        await call.message.answer(
             f"""
-💳 فاکتور پرداخت
+🎉 خرید موفق بود
 
-💰 مبلغ:
-{amount:,} تومان
+💎 محصول:
+{product}
 
-🆔 شناسه:
-{payment['authority']}
+🎁 کد ووچر:
 
+`{voucher['code']}`
 
-برای تست تایید پرداخت:
- /verify {payment['authority']} {amount}
-            """
-        )
-
-
-
-
-
-    # تست تایید پرداخت
-
-    elif data == "verify":
-
-
-        await call.message.answer(
-            "از دستور /verify استفاده کنید."
+ممنون از خرید شما ❤️
+"""
         )
 
 
@@ -210,12 +237,11 @@ async def callback_handler(
 
 
         await call.message.answer(
-
             f"""
 💰 موجودی شما:
 
 {balance:,} تومان
-            """
+"""
         )
 
 
@@ -245,7 +271,7 @@ async def callback_handler(
 
         await call.message.answer(
             """
-📦 سفارشات شما خالی است.
+📦 سفارشات شما
 """
         )
 
@@ -267,96 +293,18 @@ async def callback_handler(
 
 
 
-    elif data.startswith("premium_"):
-
-
-        await call.message.answer(
-            """
-⏳ در حال بررسی خرید...
-"""
-        )
-
-
-
-
+    # برگشت
 
     elif data == "back":
 
         await call.message.edit_text(
-
             "منوی اصلی 👇",
-
             reply_markup=main_menu()
-
         )
 
 
 
     await call.answer()
-
-
-
-
-
-
-# ======================
-# تایید پرداخت دستی
-# ======================
-
-@dp.message(Command("verify"))
-async def verify(message: types.Message):
-
-
-    try:
-
-        args = message.text.split()
-
-
-        authority = args[1]
-
-        amount = int(args[2])
-
-
-        result = check_and_complete(
-
-            authority,
-
-            message.from_user.id,
-
-            amount
-
-        )
-
-
-        if result:
-
-            await message.answer(
-                """
-✅ پرداخت تایید شد
-
-💰 موجودی شما افزایش یافت.
-"""
-            )
-
-        else:
-
-            await message.answer(
-                """
-❌ پرداخت تایید نشد.
-"""
-            )
-
-
-    except:
-
-
-        await message.answer(
-            """
-فرمت صحیح:
-
-/verify شناسه مبلغ
-"""
-        )
 
 
 
@@ -374,9 +322,7 @@ async def main():
         "🤖 Premium Voucher Started"
     )
 
-
     await dp.start_polling(bot)
-
 
 
 
