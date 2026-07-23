@@ -1,12 +1,33 @@
 from aiogram import types
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+
+from buttons import (
+    admin_menu,
+    services_menu
+)
+
+import database
 
 from config import ADMIN_ID
 
-from database import (
-    users_count,
-    orders_count
-)
+
+
+# =====================
+# حالت های افزودن سایت
+# =====================
+
+class AddService(StatesGroup):
+
+    name = State()
+
+    url = State()
+
+    api_key = State()
+
+    api_secret = State()
+
+
 
 
 
@@ -17,74 +38,49 @@ def is_admin(user_id):
 
 
 
-def admin_menu():
 
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
+# =====================
+# باز کردن پنل
+# =====================
 
-            [
-                InlineKeyboardButton(
-                    text="📊 آمار ربات",
-                    callback_data="admin_stats"
-                )
-            ],
-
-            [
-                InlineKeyboardButton(
-                    text="🎁 مدیریت ووچر",
-                    callback_data="admin_voucher"
-                )
-            ],
-
-            [
-                InlineKeyboardButton(
-                    text="👥 کاربران",
-                    callback_data="admin_users"
-                )
-            ],
-
-            [
-                InlineKeyboardButton(
-                    text="💰 مدیریت مالی",
-                    callback_data="admin_money"
-                )
-            ]
-
-        ]
-    )
-
-
-
-
-
-async def open_admin(message: types.Message):
+async def open_admin(message):
 
     if not is_admin(
         message.from_user.id
     ):
-
         return
 
 
     await message.answer(
+
         """
 👑 پنل مدیریت Premium Voucher
 
-از منو انتخاب کنید:
-""",
+انتخاب کنید:
+        """,
 
         reply_markup=admin_menu()
+
     )
 
 
 
 
 
-async def admin_callback(call):
+# =====================
+# کال بک های ادمین
+# =====================
 
+async def admin_callback(
+        call,
+        state: FSMContext
+):
 
     data = call.data
 
+
+
+    # آمار
 
     if data == "admin_stats":
 
@@ -95,57 +91,198 @@ async def admin_callback(call):
 📊 آمار ربات
 
 👥 کاربران:
-{users_count()}
+{database.users_count()}
 
-📦 سفارش‌ها:
-{orders_count()}
+📦 سفارشات:
+{database.orders_count()}
 """
         )
 
 
 
-    elif data == "admin_voucher":
+
+
+    # سرویس ها
+
+    elif data == "admin_services":
+
+
+        services = database.get_services()
 
 
         await call.message.answer(
 
             """
-🎁 مدیریت ووچر
+🔗 مدیریت سایت های ووچر
 
-➕ افزودن ووچر
-📋 لیست ووچرها
-🗑 حذف ووچر
-"""
+سرویس فعال:
+            """,
+
+            reply_markup=services_menu(
+                services
+            )
+
         )
 
 
 
-    elif data == "admin_users":
+
+
+    # افزودن سایت
+
+    elif data == "add_service":
+
+
+        await state.set_state(
+            AddService.name
+        )
 
 
         await call.message.answer(
 
             """
-👥 مدیریت کاربران
+🌐 اسم سایت را بفرست:
 
-جستجو و مدیریت کاربران
-"""
-        )
-
-
-
-    elif data == "admin_money":
-
-
-        await call.message.answer(
-
+مثال:
+Premium Voucher
             """
-💰 مدیریت مالی
 
-افزایش موجودی
-بررسی پرداخت‌ها
-"""
         )
+
+
+
 
 
     await call.answer()
+
+
+
+
+
+# =====================
+# گرفتن اطلاعات سایت
+# =====================
+
+
+async def add_service_name(
+        message: types.Message,
+        state: FSMContext
+):
+
+    await state.update_data(
+
+        name=message.text
+
+    )
+
+
+    await state.set_state(
+        AddService.url
+    )
+
+
+    await message.answer(
+
+        """
+🔗 آدرس API سایت را بفرست:
+        """
+
+    )
+
+
+
+
+
+async def add_service_url(
+        message: types.Message,
+        state: FSMContext
+):
+
+    await state.update_data(
+
+        url=message.text
+
+    )
+
+
+    await state.set_state(
+        AddService.api_key
+    )
+
+
+    await message.answer(
+
+        """
+🔑 API KEY را بفرست:
+        """
+
+    )
+
+
+
+
+
+async def add_service_key(
+        message: types.Message,
+        state: FSMContext
+):
+
+    await state.update_data(
+
+        api_key=message.text
+
+    )
+
+
+    await state.set_state(
+
+        AddService.api_secret
+
+    )
+
+
+    await message.answer(
+
+        """
+🔐 Secret Key را بفرست:
+        """
+
+    )
+
+
+
+
+
+async def add_service_secret(
+        message: types.Message,
+        state: FSMContext
+):
+
+    data = await state.get_data()
+
+
+    database.add_service(
+
+        data["name"],
+
+        data["url"],
+
+        data["api_key"],
+
+        message.text
+
+    )
+
+
+    await state.clear()
+
+
+    await message.answer(
+
+        """
+✅ سایت ووچر با موفقیت اضافه شد
+
+از این به بعد می‌توانی از این سرویس استفاده کنی.
+        """
+
+    )
