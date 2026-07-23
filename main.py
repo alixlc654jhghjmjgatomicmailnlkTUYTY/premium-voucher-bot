@@ -22,6 +22,7 @@ from admin import (
 from payment import create_payment
 
 
+
 logging.basicConfig(
     level=logging.INFO
 )
@@ -35,9 +36,9 @@ dp = Dispatcher()
 
 
 
-# =====================
+# ======================
 # START
-# =====================
+# ======================
 
 @dp.message(CommandStart())
 async def start(message: types.Message):
@@ -54,9 +55,9 @@ async def start(message: types.Message):
 
 🎁 خرید ووچر
 💳 شارژ کیف پول
-⚡ تحویل سریع
+⚡ تحویل سریع و امن
 
-منوی زیر را انتخاب کنید 👇
+از منوی زیر انتخاب کنید 👇
         """,
 
         reply_markup=main_menu()
@@ -64,26 +65,28 @@ async def start(message: types.Message):
 
 
 
-# =====================
+
+# ======================
 # ADMIN
-# =====================
+# ======================
 
 @dp.message(Command("admin"))
-async def admin_panel(message: types.Message):
+async def admin(message: types.Message):
 
     await open_admin(message)
 
 
 
-# =====================
+
+
+# ======================
 # CALLBACK
-# =====================
+# ======================
 
 @dp.callback_query()
 async def callback_handler(
         call: types.CallbackQuery
 ):
-
 
     data = call.data
 
@@ -106,6 +109,7 @@ async def callback_handler(
 
 
         await call.message.edit_text(
+
             """
 🎁 انتخاب محصول:
 
@@ -113,12 +117,14 @@ async def callback_handler(
             """,
 
             reply_markup=products_menu()
+
         )
 
 
 
 
-    # شارژ حساب
+
+    # شارژ کیف پول
 
     elif data == "charge":
 
@@ -167,6 +173,17 @@ async def callback_handler(
         else:
 
 
+            database.add_transaction(
+
+                call.from_user.id,
+
+                amount,
+
+                payment["authority"]
+
+            )
+
+
             await call.message.answer(
 
                 f"""
@@ -175,10 +192,10 @@ async def callback_handler(
 💰 مبلغ:
 {amount:,} تومان
 
-🆔 شماره پرداخت:
+🆔 کد پرداخت:
 {payment['authority']}
 
-⏳ در انتظار پرداخت...
+⏳ منتظر پرداخت...
                 """
 
             )
@@ -202,9 +219,9 @@ async def callback_handler(
         await call.message.answer(
 
             f"""
-💰 موجودی کیف پول:
+💰 موجودی کیف پول شما:
 
-{balance} تومان
+{balance:,} تومان
             """
 
         )
@@ -225,6 +242,9 @@ async def callback_handler(
 
 🆔 ID:
 {call.from_user.id}
+
+💰 موجودی:
+{database.get_balance(call.from_user.id)}
             """
 
         )
@@ -241,7 +261,7 @@ async def callback_handler(
         await call.message.answer(
 
             """
-📦 سفارشات شما
+📦 سفارش‌های شما
 
 هنوز سفارشی ندارید.
             """
@@ -262,7 +282,7 @@ async def callback_handler(
             """
 🆘 پشتیبانی
 
-با پشتیبانی در ارتباط باشید.
+برای ارتباط با پشتیبانی پیام دهید.
             """
 
         )
@@ -271,7 +291,7 @@ async def callback_handler(
 
 
 
-    # محصولات
+    # انتخاب محصول
 
     elif data.startswith("premium_"):
 
@@ -281,7 +301,7 @@ async def callback_handler(
             """
 ⏳ درخواست خرید ثبت شد
 
-در حال بررسی...
+در حال بررسی موجودی...
             """
 
         )
@@ -309,12 +329,13 @@ async def callback_handler(
 
 
 
-# =====================
+
+
+# ======================
 # RUN
-# =====================
+# ======================
 
 async def main():
-
 
     database.init_db()
 
@@ -325,6 +346,7 @@ async def main():
 
 
     await dp.start_polling(bot)
+
 
 
 
