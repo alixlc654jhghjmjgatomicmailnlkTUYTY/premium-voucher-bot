@@ -1,24 +1,26 @@
 import asyncio
+import logging
+
 from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command
-from aiogram.types import CallbackQuery
+from aiogram.filters import CommandStart, Command
 
-from config import BOT_TOKEN, ADMIN_ID
+from config import BOT_TOKEN
 
-from database import (
-    init_db,
-    add_user,
-    get_balance,
-    add_balance,
-    add_order,
-    get_voucher,
-    users_count,
-    orders_count
-)
+import database
 
 from buttons import (
     main_menu,
     products_menu
+)
+
+from admin import (
+    open_admin,
+    admin_callback
+)
+
+
+logging.basicConfig(
+    level=logging.INFO
 )
 
 
@@ -30,226 +32,221 @@ dp = Dispatcher()
 
 
 
+# =========================
 # شروع ربات
-@dp.message(Command("start"))
+# =========================
+
+@dp.message(CommandStart())
 async def start(message: types.Message):
 
-    add_user(
+    database.add_user(
         message.from_user.id,
         message.from_user.username
     )
 
-    text = """
-🤖 خوش آمدید به Premium Voucher
-
-🎁 فروش ووچرهای دیجیتال
-⚡ تحویل سریع
-🔒 امن و مطمئن
-
-یکی از گزینه‌ها را انتخاب کنید:
-"""
 
     await message.answer(
-        text,
+        """
+💎 خوش آمدید به Premium Voucher
+
+🎁 خرید ووچر دیجیتال
+⚡ تحویل سریع
+🔒 سیستم امن فروش
+
+از منوی زیر انتخاب کنید 👇
+        """,
+
         reply_markup=main_menu()
     )
 
 
 
-# پنل ادمین
+# =========================
+# پنل مدیریت
+# =========================
+
 @dp.message(Command("admin"))
-async def admin(message: types.Message):
+async def admin_panel(message: types.Message):
 
-    if message.from_user.id != ADMIN_ID:
-        return
-
-
-    text=f"""
-👑 پنل مدیریت
-
-👥 کاربران:
-{users_count()}
-
-📦 سفارشات:
-{orders_count()}
-"""
-
-
-    await message.answer(text)
+    await open_admin(message)
 
 
 
-# مدیریت دکمه ها
+
+# =========================
+# دکمه ها
+# =========================
+
 @dp.callback_query()
-async def callbacks(call: CallbackQuery):
+async def buttons(call: types.CallbackQuery):
 
 
     data = call.data
 
 
-    # خرید ووچر
+
+    # دکمه های ادمین
+
+    if data.startswith("admin_"):
+
+        await admin_callback(call)
+
+        return
+
+
+
+
+    # خرید
+
     if data == "buy":
 
         await call.message.edit_text(
-            "🎁 محصول مورد نظر را انتخاب کنید:",
+            """
+🎁 انتخاب محصول:
+
+یکی از گزینه‌ها را انتخاب کنید:
+            """,
+
             reply_markup=products_menu()
         )
 
 
+
+
     # موجودی
+
     elif data == "balance":
 
-        bal = get_balance(
+
+        balance = database.get_balance(
             call.from_user.id
         )
 
-        await call.message.answer(
-            f"""
-💰 موجودی حساب شما:
 
-{bal} تومان
+        await call.message.answer(
+
+            f"""
+💰 موجودی شما:
+
+{balance} تومان
 """
         )
+
+
+
+
+    # سفارش‌ها
+
+    elif data == "orders":
+
+
+        await call.message.answer(
+
+            """
+📦 سفارش‌های شما
+
+در حال حاضر سفارشی ثبت نشده.
+"""
+        )
+
+
+
 
 
     # پروفایل
+
     elif data == "profile":
 
+
         await call.message.answer(
+
             f"""
 👤 حساب کاربری
 
-🆔 آیدی:
+🆔 ID:
 {call.from_user.id}
-
-💰 موجودی:
-{get_balance(call.from_user.id)}
 """
         )
+
+
+
 
 
     # پشتیبانی
+
     elif data == "support":
 
+
         await call.message.answer(
+
             """
 🆘 پشتیبانی
 
-برای ارتباط با پشتیبانی پیام ارسال کنید.
+با پشتیبانی در ارتباط باشید.
 """
         )
+
+
 
 
 
     # محصولات
 
-
     elif data.startswith("premium_"):
 
 
-        products = {
-
-            "premium_1":
-            ("تلگرام پریمیوم ۱ ماهه", 100000),
-
-            "premium_3":
-            ("تلگرام پریمیوم ۳ ماهه", 250000),
-
-            "premium_6":
-            ("تلگرام پریمیوم ۶ ماهه", 450000)
-
-        }
-
-
-        product,price = products[data]
-
-
-        balance = get_balance(
-            call.from_user.id
-        )
-
-
-        if balance < price:
-
-            await call.message.answer(
-                f"""
-❌ موجودی کافی نیست
-
-💰 قیمت:
-{price}
-
-موجودی شما:
-{balance}
-"""
-            )
-
-            return
-
-
-
-        code = get_voucher(product)
-
-
-        if not code:
-
-            await call.message.answer(
-                "❌ موجودی ووچر این محصول تمام شده"
-            )
-
-            return
-
-
-
-        add_balance(
-            call.from_user.id,
-            -price
-        )
-
-
-        add_order(
-            call.from_user.id,
-            product,
-            price
-        )
-
-
         await call.message.answer(
-            f"""
-✅ خرید موفق بود 🎉
 
-🎁 محصول:
-{product}
+            """
+⏳ درخواست خرید ثبت شد
 
-🔑 کد ووچر:
-
-`{code}`
-
-ممنون از خرید شما 💎
+در حال بررسی موجودی ووچر...
 """
         )
 
 
+        # اینجا بعداً API واقعی وصل می‌شود
+
+
+
+
+
+    # بازگشت
 
     elif data == "back":
 
-        await call.message.edit_text(
-            "منوی اصلی:",
-            reply_markup=main_menu()
-        )
 
+        await call.message.edit_text(
+
+            "منوی اصلی 👇",
+
+            reply_markup=main_menu()
+
+        )
 
 
     await call.answer()
 
 
 
+
+# =========================
+# اجرا
+# =========================
+
 async def main():
 
-    init_db()
 
-    print("🤖 Premium Voucher Bot Started")
+    database.init_db()
+
+
+    print(
+        "🤖 Premium Voucher Started"
+    )
+
 
     await dp.start_polling(bot)
+
 
 
 
