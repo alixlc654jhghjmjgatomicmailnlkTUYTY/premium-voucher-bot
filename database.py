@@ -1,49 +1,48 @@
 import sqlite3
 
-DB_NAME = "bot.db"
+
+db = sqlite3.connect("bot.db")
+cursor = db.cursor()
 
 
-def init_db():
-    conn = sqlite3.connect(DB_NAME)
-    cur = conn.cursor()
+def create_tables():
 
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        telegram_id INTEGER UNIQUE,
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS users(
+        id INTEGER PRIMARY KEY,
         username TEXT,
-        balance REAL DEFAULT 0
+        balance INTEGER DEFAULT 0
     )
     """)
 
-    conn.commit()
-    conn.close()
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS vouchers(
+        code TEXT PRIMARY KEY,
+        value INTEGER,
+        used INTEGER DEFAULT 0
+    )
+    """)
+
+    db.commit()
 
 
-def add_user(telegram_id, username):
-    conn = sqlite3.connect(DB_NAME)
-    cur = conn.cursor()
 
-    cur.execute("""
-    INSERT OR IGNORE INTO users
-    (telegram_id, username)
-    VALUES (?, ?)
-    """, (telegram_id, username))
+def add_user(user_id, username):
 
-    conn.commit()
-    conn.close()
-
-
-def get_user(telegram_id):
-    conn = sqlite3.connect(DB_NAME)
-    cur = conn.cursor()
-
-    cur.execute(
-        "SELECT * FROM users WHERE telegram_id=?",
-        (telegram_id,)
+    cursor.execute(
+        "INSERT OR IGNORE INTO users(id,username) VALUES(?,?)",
+        (user_id, username)
     )
 
-    user = cur.fetchone()
-    conn.close()
+    db.commit()
 
-    return user
+
+
+def get_users():
+
+    cursor.execute(
+        "SELECT COUNT(*) FROM users"
+    )
+
+    return cursor.fetchone()[0]
