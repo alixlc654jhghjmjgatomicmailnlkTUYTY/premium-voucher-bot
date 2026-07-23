@@ -1,26 +1,67 @@
-from aiogram.types import Message, CallbackQuery
+from aiogram import types
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from config import ADMIN_ID
-import database
-import buttons
+
+from database import (
+    users_count,
+    orders_count
+)
 
 
 
-def check_admin(user_id):
+def is_admin(user_id):
 
     return user_id == ADMIN_ID
 
 
 
 
+def admin_menu():
 
-async def open_admin(message: Message):
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
 
-    if not check_admin(message.from_user.id):
+            [
+                InlineKeyboardButton(
+                    text="📊 آمار ربات",
+                    callback_data="admin_stats"
+                )
+            ],
 
-        await message.answer(
-            "⛔ دسترسی ندارید"
-        )
+            [
+                InlineKeyboardButton(
+                    text="🎁 مدیریت ووچر",
+                    callback_data="admin_voucher"
+                )
+            ],
+
+            [
+                InlineKeyboardButton(
+                    text="👥 کاربران",
+                    callback_data="admin_users"
+                )
+            ],
+
+            [
+                InlineKeyboardButton(
+                    text="💰 مدیریت مالی",
+                    callback_data="admin_money"
+                )
+            ]
+
+        ]
+    )
+
+
+
+
+
+async def open_admin(message: types.Message):
+
+    if not is_admin(
+        message.from_user.id
+    ):
 
         return
 
@@ -29,84 +70,49 @@ async def open_admin(message: Message):
         """
 👑 پنل مدیریت Premium Voucher
 
-مدیریت کامل ربات از اینجا انجام می‌شود:
-        """,
-        reply_markup=buttons.admin_menu()
+از منو انتخاب کنید:
+""",
+
+        reply_markup=admin_menu()
     )
 
 
 
 
 
-
-
-async def admin_callbacks(call: CallbackQuery):
+async def admin_callback(call):
 
 
     data = call.data
 
 
-
-    # آمار ربات
-
     if data == "admin_stats":
 
 
-        users = database.users_count()
-
-        vouchers = database.vouchers_count()
-
-
-
         await call.message.answer(
+
             f"""
 📊 آمار ربات
 
 👥 کاربران:
-{users}
+{users_count()}
 
-🎁 تعداد ووچر:
-{vouchers}
+📦 سفارش‌ها:
+{orders_count()}
 """
         )
 
 
 
-
-
-    # کاربران
-
-    elif data == "admin_users":
-
-
-        users = database.users_count()
+    elif data == "admin_voucher":
 
 
         await call.message.answer(
-            f"""
-👥 مدیریت کاربران
 
-تعداد کاربران ثبت شده:
-{users}
-"""
-        )
-
-
-
-
-
-
-    # ووچرها
-
-    elif data == "admin_vouchers":
-
-
-        await call.message.answer(
             """
 🎁 مدیریت ووچر
 
-امکانات:
-➕ ساخت ووچر
+➕ افزودن ووچر
 📋 لیست ووچرها
 🗑 حذف ووچر
 """
@@ -114,59 +120,32 @@ async def admin_callbacks(call: CallbackQuery):
 
 
 
-
-
-
-    # سفارش ها
-
-    elif data == "admin_orders":
+    elif data == "admin_users":
 
 
         await call.message.answer(
-            """
-💳 سفارش‌ها
 
-لیست سفارش‌های کاربران اینجا نمایش داده می‌شود.
+            """
+👥 مدیریت کاربران
+
+جستجو و مدیریت کاربران
 """
         )
 
 
 
-
-
-
-    # پیام همگانی
-
-    elif data == "admin_broadcast":
+    elif data == "admin_money":
 
 
         await call.message.answer(
-            """
-📢 ارسال پیام همگانی
 
-پیام خود را ارسال کنید.
+            """
+💰 مدیریت مالی
+
+افزایش موجودی
+بررسی پرداخت‌ها
 """
         )
-
-
-
-
-
-
-    # تنظیمات
-
-    elif data == "admin_settings":
-
-
-        await call.message.answer(
-            """
-⚙️ تنظیمات
-
-تنظیمات ربات:
-✅ فعال
-"""
-        )
-
 
 
     await call.answer()
