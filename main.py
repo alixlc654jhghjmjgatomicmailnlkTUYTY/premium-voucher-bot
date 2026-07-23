@@ -19,8 +19,12 @@ from admin import (
     admin_callback
 )
 
+from payment import create_payment
 
-logging.basicConfig(level=logging.INFO)
+
+logging.basicConfig(
+    level=logging.INFO
+)
 
 
 bot = Bot(
@@ -43,16 +47,18 @@ async def start(message: types.Message):
         message.from_user.username
     )
 
+
     await message.answer(
         """
 💎 خوش آمدید به Premium Voucher
 
-🎁 خرید ووچر دیجیتال
-💰 کیف پول
+🎁 خرید ووچر
+💳 شارژ کیف پول
 ⚡ تحویل سریع
 
-یکی از گزینه‌ها را انتخاب کنید 👇
+منوی زیر را انتخاب کنید 👇
         """,
+
         reply_markup=main_menu()
     )
 
@@ -70,13 +76,17 @@ async def admin_panel(message: types.Message):
 
 
 # =====================
-# BUTTONS
+# CALLBACK
 # =====================
 
 @dp.callback_query()
-async def callback_handler(call: types.CallbackQuery):
+async def callback_handler(
+        call: types.CallbackQuery
+):
+
 
     data = call.data
+
 
 
     # پنل ادمین
@@ -89,18 +99,22 @@ async def callback_handler(call: types.CallbackQuery):
 
 
 
+
     # خرید ووچر
 
     if data == "buy":
+
 
         await call.message.edit_text(
             """
 🎁 انتخاب محصول:
 
-یکی را انتخاب کنید 👇
+محصول مورد نظر را انتخاب کنید 👇
             """,
+
             reply_markup=products_menu()
         )
+
 
 
 
@@ -108,33 +122,68 @@ async def callback_handler(call: types.CallbackQuery):
 
     elif data == "charge":
 
+
         await call.message.answer(
+
             """
 💳 مبلغ شارژ را انتخاب کنید:
             """,
+
             reply_markup=charge_menu()
+
         )
 
 
 
-    # مبلغ شارژ
+
+
+    # ساخت پرداخت
 
     elif data.startswith("charge_"):
+
 
         amount = int(
             data.split("_")[1]
         )
 
-        await call.message.answer(
-            f"""
-💳 فاکتور شارژ
 
-مبلغ:
+        payment = create_payment(
+
+            amount,
+
+            call.from_user.id
+
+        )
+
+
+        if "error" in payment:
+
+
+            await call.message.answer(
+                "❌ خطا در ساخت پرداخت"
+            )
+
+
+        else:
+
+
+            await call.message.answer(
+
+                f"""
+💳 فاکتور پرداخت ساخته شد
+
+💰 مبلغ:
 {amount:,} تومان
 
-⏳ درگاه پرداخت به زودی متصل می‌شود.
-            """
-        )
+🆔 شماره پرداخت:
+{payment['authority']}
+
+⏳ در انتظار پرداخت...
+                """
+
+            )
+
+
 
 
 
@@ -142,17 +191,25 @@ async def callback_handler(call: types.CallbackQuery):
 
     elif data == "balance":
 
+
         balance = database.get_balance(
+
             call.from_user.id
+
         )
 
+
         await call.message.answer(
+
             f"""
-💰 موجودی شما:
+💰 موجودی کیف پول:
 
 {balance} تومان
             """
+
         )
+
+
 
 
 
@@ -160,14 +217,19 @@ async def callback_handler(call: types.CallbackQuery):
 
     elif data == "profile":
 
+
         await call.message.answer(
+
             f"""
 👤 حساب کاربری
 
 🆔 ID:
 {call.from_user.id}
             """
+
         )
+
+
 
 
 
@@ -175,13 +237,18 @@ async def callback_handler(call: types.CallbackQuery):
 
     elif data == "orders":
 
-        await call.message.answer(
-            """
-📦 سفارش‌های شما
 
-هنوز سفارشی ثبت نشده.
+        await call.message.answer(
+
             """
+📦 سفارشات شما
+
+هنوز سفارشی ندارید.
+            """
+
         )
+
+
 
 
 
@@ -189,13 +256,18 @@ async def callback_handler(call: types.CallbackQuery):
 
     elif data == "support":
 
+
         await call.message.answer(
+
             """
 🆘 پشتیبانی
 
 با پشتیبانی در ارتباط باشید.
             """
+
         )
+
+
 
 
 
@@ -203,13 +275,18 @@ async def callback_handler(call: types.CallbackQuery):
 
     elif data.startswith("premium_"):
 
-        await call.message.answer(
-            """
-⏳ درخواست خرید ثبت شد.
 
-در حال بررسی موجودی ووچر...
+        await call.message.answer(
+
             """
+⏳ درخواست خرید ثبت شد
+
+در حال بررسی...
+            """
+
         )
+
+
 
 
 
@@ -217,9 +294,13 @@ async def callback_handler(call: types.CallbackQuery):
 
     elif data == "back":
 
+
         await call.message.edit_text(
+
             "منوی اصلی 👇",
+
             reply_markup=main_menu()
+
         )
 
 
@@ -234,11 +315,17 @@ async def callback_handler(call: types.CallbackQuery):
 
 async def main():
 
+
     database.init_db()
 
-    print("🤖 Premium Voucher Started")
+
+    print(
+        "🤖 Premium Voucher Started"
+    )
+
 
     await dp.start_polling(bot)
+
 
 
 
