@@ -2,34 +2,47 @@ import requests
 import hashlib
 import time
 
-from config import API_KEY, API_SECRET, API_URL
+from config import (
+    API_KEY,
+    API_SECRET,
+    API_URL
+)
 
 
 
-def signature(data):
+def create_sign(data):
 
-    text = API_SECRET + str(data)
+    raw = API_SECRET + str(data)
 
     return hashlib.sha256(
-        text.encode()
+        raw.encode()
     ).hexdigest()
 
 
 
-def create_voucher(amount):
 
 
-    data = {
+def buy_voucher(amount):
+
+    payload = {
+
         "amount": amount,
-        "time": int(time.time())
+
+        "currency": "USD",
+
+        "timestamp": int(time.time())
+
     }
+
 
 
     headers = {
 
-        "X-API-KEY": API_KEY,
+        "API-Key": API_KEY,
 
-        "X-SIGNATURE": signature(data)
+        "Signature": create_sign(payload),
+
+        "Content-Type": "application/json"
 
     }
 
@@ -38,20 +51,29 @@ def create_voucher(amount):
     try:
 
         response = requests.post(
+
             API_URL,
-            json=data,
+
+            json=payload,
+
             headers=headers,
+
             timeout=30
+
         )
 
 
         return response.json()
 
 
-    except Exception as e:
+
+    except Exception as error:
 
 
         return {
-            "status":False,
-            "error":str(e)
+
+            "success": False,
+
+            "message": str(error)
+
         }
