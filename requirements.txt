@@ -1,0 +1,8 @@
+aiogram==3.13.1
+python-dotenv
+httpx
+fastapi
+uvicorn
+sqlalchemy
+asyncpg
+redis
