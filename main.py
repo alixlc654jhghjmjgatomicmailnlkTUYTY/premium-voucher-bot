@@ -21,6 +21,8 @@ from admin import (
 
 from payment import create_payment
 
+from payment_callback import check_and_complete
+
 
 
 logging.basicConfig(
@@ -48,18 +50,16 @@ async def start(message: types.Message):
         message.from_user.username
     )
 
-
     await message.answer(
         """
 💎 خوش آمدید به Premium Voucher
 
 🎁 خرید ووچر
 💳 شارژ کیف پول
-⚡ تحویل سریع و امن
+⚡ تحویل سریع
 
-از منوی زیر انتخاب کنید 👇
+انتخاب کنید 👇
         """,
-
         reply_markup=main_menu()
     )
 
@@ -78,7 +78,6 @@ async def admin(message: types.Message):
 
 
 
-
 # ======================
 # CALLBACK
 # ======================
@@ -92,8 +91,6 @@ async def callback_handler(
 
 
 
-    # پنل ادمین
-
     if data.startswith("admin_"):
 
         await admin_callback(call)
@@ -103,42 +100,30 @@ async def callback_handler(
 
 
 
-    # خرید ووچر
+    # خرید
 
     if data == "buy":
 
-
         await call.message.edit_text(
-
             """
 🎁 انتخاب محصول:
-
-محصول مورد نظر را انتخاب کنید 👇
             """,
-
             reply_markup=products_menu()
-
         )
 
 
 
 
-
-    # شارژ کیف پول
+    # شارژ
 
     elif data == "charge":
 
-
         await call.message.answer(
-
             """
 💳 مبلغ شارژ را انتخاب کنید:
             """,
-
             reply_markup=charge_menu()
-
         )
-
 
 
 
@@ -154,51 +139,61 @@ async def callback_handler(
 
 
         payment = create_payment(
-
             amount,
-
             call.from_user.id
-
         )
 
 
         if "error" in payment:
 
-
             await call.message.answer(
                 "❌ خطا در ساخت پرداخت"
             )
 
-
-        else:
-
-
-            database.add_transaction(
-
-                call.from_user.id,
-
-                amount,
-
-                payment["authority"]
-
-            )
+            return
 
 
-            await call.message.answer(
 
-                f"""
-💳 فاکتور پرداخت ساخته شد
+        database.add_transaction(
+
+            call.from_user.id,
+
+            amount,
+
+            payment["authority"]
+
+        )
+
+
+        await call.message.answer(
+
+            f"""
+💳 فاکتور پرداخت
 
 💰 مبلغ:
 {amount:,} تومان
 
-🆔 کد پرداخت:
+🆔 شناسه:
 {payment['authority']}
 
-⏳ منتظر پرداخت...
-                """
 
-            )
+برای تست تایید پرداخت:
+ /verify {payment['authority']} {amount}
+            """
+        )
+
+
+
+
+
+    # تست تایید پرداخت
+
+    elif data == "verify":
+
+
+        await call.message.answer(
+            "از دستور /verify استفاده کنید."
+        )
 
 
 
@@ -210,20 +205,17 @@ async def callback_handler(
 
 
         balance = database.get_balance(
-
             call.from_user.id
-
         )
 
 
         await call.message.answer(
 
             f"""
-💰 موجودی کیف پول شما:
+💰 موجودی شما:
 
 {balance:,} تومان
             """
-
         )
 
 
@@ -234,19 +226,13 @@ async def callback_handler(
 
     elif data == "profile":
 
-
         await call.message.answer(
-
             f"""
 👤 حساب کاربری
 
 🆔 ID:
 {call.from_user.id}
-
-💰 موجودی:
-{database.get_balance(call.from_user.id)}
-            """
-
+"""
         )
 
 
@@ -257,15 +243,10 @@ async def callback_handler(
 
     elif data == "orders":
 
-
         await call.message.answer(
-
             """
-📦 سفارش‌های شما
-
-هنوز سفارشی ندارید.
-            """
-
+📦 سفارشات شما خالی است.
+"""
         )
 
 
@@ -276,44 +257,30 @@ async def callback_handler(
 
     elif data == "support":
 
-
         await call.message.answer(
-
             """
 🆘 پشتیبانی
-
-برای ارتباط با پشتیبانی پیام دهید.
-            """
-
+"""
         )
 
 
 
 
-
-    # انتخاب محصول
 
     elif data.startswith("premium_"):
 
 
         await call.message.answer(
-
             """
-⏳ درخواست خرید ثبت شد
-
-در حال بررسی موجودی...
-            """
-
+⏳ در حال بررسی خرید...
+"""
         )
 
 
 
 
 
-    # برگشت
-
     elif data == "back":
-
 
         await call.message.edit_text(
 
@@ -331,6 +298,70 @@ async def callback_handler(
 
 
 
+
+# ======================
+# تایید پرداخت دستی
+# ======================
+
+@dp.message(Command("verify"))
+async def verify(message: types.Message):
+
+
+    try:
+
+        args = message.text.split()
+
+
+        authority = args[1]
+
+        amount = int(args[2])
+
+
+        result = check_and_complete(
+
+            authority,
+
+            message.from_user.id,
+
+            amount
+
+        )
+
+
+        if result:
+
+            await message.answer(
+                """
+✅ پرداخت تایید شد
+
+💰 موجودی شما افزایش یافت.
+"""
+            )
+
+        else:
+
+            await message.answer(
+                """
+❌ پرداخت تایید نشد.
+"""
+            )
+
+
+    except:
+
+
+        await message.answer(
+            """
+فرمت صحیح:
+
+/verify شناسه مبلغ
+"""
+        )
+
+
+
+
+
 # ======================
 # RUN
 # ======================
@@ -338,7 +369,6 @@ async def callback_handler(
 async def main():
 
     database.init_db()
-
 
     print(
         "🤖 Premium Voucher Started"
