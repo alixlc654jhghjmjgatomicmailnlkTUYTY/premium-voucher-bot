@@ -1,115 +1,68 @@
 import requests
 
-# =========================
-# تنظیمات API ووچر
-# =========================
-
-# آدرس API سایت ووچر
-API_URL = "https://api.premiummoney.com"
-
-# کلید API را اینجا بگذار
-API_KEY = "5hnzarlmxklp5atafzld2jaec0z6lzhv2erogdrgkycw1bb1omdu4vgnzql3ofl4ا"
-
-
-# =========================
-# هدر درخواست
-# =========================
-
-headers = {
-    "Authorization": f"Bearer {API_KEY}",
-    "Content-Type": "application/json"
-}
+from config import API_KEY, API_SECRET, API_URL
 
 
 
-# =========================
-# گرفتن موجودی حساب
-# =========================
-
-def get_balance():
+def get_voucher(product):
 
     try:
 
-        response = requests.get(
-            f"{API_URL}/balance",
-            headers=headers
-        )
-
-        data = response.json()
-
-        return data
-
-
-    except Exception as e:
-
-        return {
-            "error": str(e)
+        headers = {
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json"
         }
 
 
+        data = {
 
-# =========================
-# ساخت ووچر
-# =========================
+            "product": product,
 
-def create_voucher(amount):
-
-    try:
-
-        payload = {
-
-            "amount": amount
+            "secret": API_SECRET
 
         }
 
 
         response = requests.post(
-            f"{API_URL}/voucher/create",
-            json=payload,
-            headers=headers
+            API_URL,
+            json=data,
+            headers=headers,
+            timeout=20
         )
 
 
-        return response.json()
+        result = response.json()
 
 
-    except Exception as e:
+
+        if result.get("code"):
+
+            return {
+
+                "success": True,
+
+                "code": result["code"]
+
+            }
+
+
 
         return {
 
-            "error": str(e)
+            "success": False,
+
+            "error": "voucher_not_found"
 
         }
 
 
 
-# =========================
-# بررسی ووچر
-# =========================
-
-def check_voucher(code):
-
-    try:
-
-        response = requests.post(
-
-            f"{API_URL}/voucher/check",
-
-            json={
-                "code": code
-            },
-
-            headers=headers
-
-        )
-
-
-        return response.json()
-
-
     except Exception as e:
 
+
         return {
+
+            "success": False,
 
             "error": str(e)
 
