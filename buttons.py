@@ -1,6 +1,11 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
+
+# =========================
+# منوی اصلی کاربر
+# =========================
+
 def main_menu():
 
     return InlineKeyboardMarkup(
@@ -12,15 +17,16 @@ def main_menu():
                     callback_data="buy"
                 ),
                 InlineKeyboardButton(
-                    text="💎 محصولات پریمیوم",
+                    text="💎 محصولات",
                     callback_data="products"
                 )
             ],
 
+
             [
                 InlineKeyboardButton(
                     text="💰 کیف پول",
-                    callback_data="wallet"
+                    callback_data="balance"
                 ),
                 InlineKeyboardButton(
                     text="📦 سفارش‌های من",
@@ -28,20 +34,30 @@ def main_menu():
                 )
             ],
 
+
             [
                 InlineKeyboardButton(
                     text="👤 حساب کاربری",
                     callback_data="profile"
                 ),
                 InlineKeyboardButton(
-                    text="📊 موجودی",
-                    callback_data="balance"
+                    text="🎟 کد تخفیف",
+                    callback_data="discount"
                 )
             ],
 
+
             [
                 InlineKeyboardButton(
-                    text="🎧 پشتیبانی",
+                    text="⭐ دعوت دوستان",
+                    callback_data="invite"
+                )
+            ],
+
+
+            [
+                InlineKeyboardButton(
+                    text="☎️ پشتیبانی",
                     callback_data="support"
                 )
             ]
@@ -51,28 +67,99 @@ def main_menu():
 
 
 
-def admin_menu():
+
+# =========================
+# انتخاب ووچر
+# =========================
+
+def voucher_menu():
 
     return InlineKeyboardMarkup(
         inline_keyboard=[
 
             [
                 InlineKeyboardButton(
-                    text="👑 مدیریت کاربران",
-                    callback_data="manage_users"
+                    text="💎 ووچر 10 دلاری",
+                    callback_data="voucher_10"
                 )
             ],
 
+
             [
                 InlineKeyboardButton(
-                    text="🎁 ارسال ووچر",
-                    callback_data="send_voucher"
-                ),
-                InlineKeyboardButton(
-                    text="📈 آمار فروش",
-                    callback_data="stats"
+                    text="💎 ووچر 25 دلاری",
+                    callback_data="voucher_25"
                 )
             ],
+
+
+            [
+                InlineKeyboardButton(
+                    text="💎 ووچر 50 دلاری",
+                    callback_data="voucher_50"
+                )
+            ],
+
+
+            [
+                InlineKeyboardButton(
+                    text="🔙 بازگشت",
+                    callback_data="back"
+                )
+            ]
+
+        ]
+    )
+
+
+
+
+# =========================
+# پنل مدیریت
+# =========================
+
+def admin_menu():
+
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+
+
+            [
+                InlineKeyboardButton(
+                    text="📊 آمار ربات",
+                    callback_data="stats"
+                ),
+
+                InlineKeyboardButton(
+                    text="👥 کاربران",
+                    callback_data="users"
+                )
+            ],
+
+
+            [
+                InlineKeyboardButton(
+                    text="🎁 مدیریت ووچر",
+                    callback_data="vouchers"
+                )
+            ],
+
+
+            [
+                InlineKeyboardButton(
+                    text="💳 سفارش‌ها",
+                    callback_data="admin_orders"
+                )
+            ],
+
+
+            [
+                InlineKeyboardButton(
+                    text="📢 پیام همگانی",
+                    callback_data="broadcast"
+                )
+            ],
+
 
             [
                 InlineKeyboardButton(
