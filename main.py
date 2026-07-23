@@ -7,7 +7,13 @@ from aiogram.filters import CommandStart, Command
 from config import BOT_TOKEN, ADMIN_ID, SUPPORT
 
 import database
-from buttons import main_menu, admin_menu
+
+from buttons import (
+    main_menu,
+    admin_menu,
+    voucher_menu
+)
+
 from premium_api import create_voucher
 
 
@@ -23,7 +29,7 @@ dp = Dispatcher()
 
 
 # =========================
-# شروع ربات
+# استارت
 # =========================
 
 @dp.message(CommandStart())
@@ -37,7 +43,7 @@ async def start(message: types.Message):
 
     await message.answer(
         """
-💎 خوش آمدید به Premium Voucher
+💎 به Premium Voucher خوش آمدید
 
 🎁 خرید ووچر پریمیوم
 ⚡ سریع و امن
@@ -52,21 +58,24 @@ async def start(message: types.Message):
 
 
 # =========================
-# پنل مدیریت
+# پنل ادمین
 # =========================
 
 @dp.message(Command("admin"))
-async def admin_panel(message: types.Message):
+async def admin(message: types.Message):
 
     if message.from_user.id != ADMIN_ID:
+
+        await message.answer(
+            "⛔ دسترسی ندارید"
+        )
+
         return
 
 
     await message.answer(
         """
 👑 پنل مدیریت Premium Voucher
-
-مدیریت ربات:
         """,
 
         reply_markup=admin_menu()
@@ -76,68 +85,114 @@ async def admin_panel(message: types.Message):
 
 
 # =========================
-# دکمه ها
+# مدیریت دکمه ها
 # =========================
 
 @dp.callback_query()
-async def callback_handler(call: types.CallbackQuery):
+async def buttons_handler(
+        call: types.CallbackQuery
+):
+
 
     data = call.data
 
 
 
-    # خرید ووچر
+    # خرید
 
     if data == "buy":
 
 
         await call.message.answer(
-            """
-💎 انتخاب مقدار ووچر:
 
-10$
-25$
-50$
-
-به زودی فعال می‌شود.
             """
+💎 مقدار ووچر را انتخاب کنید:
+            """,
+
+            reply_markup=voucher_menu()
+
         )
 
 
 
 
-    # دریافت ووچر از API
 
-    elif data == "get_voucher":
+    # محصولات
+
+    elif data == "products":
 
 
         await call.message.answer(
-            "⏳ در حال اتصال به سیستم ووچر..."
+
+            """
+💎 محصولات موجود:
+
+🎁 ووچر 10 دلاری
+🎁 ووچر 25 دلاری
+🎁 ووچر 50 دلاری
+
+یکی را انتخاب کنید.
+            """,
+
+            reply_markup=voucher_menu()
+
         )
 
 
-        result = create_voucher(10)
 
 
-        if "code" in result:
+
+
+    # خرید ووچرهای مختلف
+
+    elif data.startswith("voucher_"):
+
+
+        amount = data.split("_")[1]
+
+
+        await call.message.answer(
+            f"""
+⏳ در حال خرید ووچر {amount} دلاری...
+
+لطفاً صبر کنید 💎
+            """
+        )
+
+
+        result = create_voucher(
+            amount
+        )
+
+
+        if result.get("code"):
+
 
             await call.message.answer(
                 f"""
-🎉 ووچر شما آماده شد:
+🎉 خرید موفق
 
-🎁 {result['code']}
+🎁 کد ووچر:
+
+`{result['code']}`
+
+ممنون از خرید شما ❤️
                 """
             )
 
+
         else:
+
 
             await call.message.answer(
                 """
 ❌ خطا در دریافت ووچر
 
-بعداً دوباره تلاش کنید.
+با پشتیبانی تماس بگیرید.
                 """
             )
+
+
 
 
 
@@ -146,18 +201,43 @@ async def callback_handler(call: types.CallbackQuery):
 
     elif data == "balance":
 
+
         balance = database.get_balance(
             call.from_user.id
         )
 
 
         await call.message.answer(
+
             f"""
-💰 موجودی شما:
+💰 کیف پول شما:
 
 {balance}
-"""
+            """
+
         )
+
+
+
+
+
+
+    # سفارش ها
+
+    elif data == "orders":
+
+
+        await call.message.answer(
+
+            """
+📦 سفارش‌های شما
+
+در حال حاضر سفارشی ندارید.
+            """
+
+        )
+
+
 
 
 
@@ -168,30 +248,57 @@ async def callback_handler(call: types.CallbackQuery):
 
 
         await call.message.answer(
+
             f"""
 👤 حساب کاربری
 
-🆔 آیدی:
+🆔 ID:
 {call.from_user.id}
 
-💎 Premium User
-"""
+⭐ Premium User
+            """
+
         )
 
 
 
 
-    # سفارش ها
 
-    elif data == "orders":
+
+    # تخفیف
+
+    elif data == "discount":
+
 
         await call.message.answer(
-            """
-📦 سفارش‌های شما
 
-هنوز سفارشی ندارید.
-"""
+            """
+🎟 کد تخفیف خود را ارسال کنید.
+            """
+
         )
+
+
+
+
+
+
+    # دعوت
+
+    elif data == "invite":
+
+
+        await call.message.answer(
+
+            """
+⭐ دعوت دوستان
+
+لینک دعوت شما ساخته می‌شود.
+            """
+
+        )
+
+
 
 
 
@@ -200,34 +307,39 @@ async def callback_handler(call: types.CallbackQuery):
 
     elif data == "support":
 
+
         await call.message.answer(
+
             f"""
 ☎️ پشتیبانی:
 
 {SUPPORT}
-"""
+            """
+
         )
 
 
 
 
-    # سوالات
 
-    elif data == "faq":
+    # بازگشت
+
+    elif data == "back":
+
 
         await call.message.answer(
-            """
-❓ سوالات متداول
 
-1- زمان دریافت ووچر؟
-2- روش پرداخت؟
-3- پشتیبانی؟
-"""
+            "منوی اصلی 👇",
+
+            reply_markup=main_menu()
+
         )
 
 
 
     await call.answer()
+
+
 
 
 
@@ -238,11 +350,17 @@ async def callback_handler(call: types.CallbackQuery):
 
 async def main():
 
+
     database.create_tables()
 
-    print("Premium Voucher Started")
+
+    print(
+        "🤖 Premium Voucher Started"
+    )
+
 
     await dp.start_polling(bot)
+
 
 
 
