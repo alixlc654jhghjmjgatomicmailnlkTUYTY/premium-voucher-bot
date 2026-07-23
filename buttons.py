@@ -1,56 +1,47 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
-
-# =========================
-# منوی اصلی کاربر
-# =========================
-
 def main_menu():
 
-    keyboard = InlineKeyboardMarkup(
+    return InlineKeyboardMarkup(
         inline_keyboard=[
 
             [
                 InlineKeyboardButton(
-                    text="💎 خرید ووچر",
-                    callback_data="buy_voucher"
+                    text="🎁 خرید ووچر",
+                    callback_data="buy"
+                ),
+                InlineKeyboardButton(
+                    text="💎 محصولات پریمیوم",
+                    callback_data="products"
                 )
             ],
 
-
             [
                 InlineKeyboardButton(
-                    text="💰 کیف پول من",
+                    text="💰 کیف پول",
                     callback_data="wallet"
                 ),
-
                 InlineKeyboardButton(
                     text="📦 سفارش‌های من",
                     callback_data="orders"
                 )
             ],
 
-
             [
                 InlineKeyboardButton(
-                    text="🎁 کد تخفیف",
-                    callback_data="discount"
+                    text="👤 حساب کاربری",
+                    callback_data="profile"
+                ),
+                InlineKeyboardButton(
+                    text="📊 موجودی",
+                    callback_data="balance"
                 )
             ],
 
-
             [
                 InlineKeyboardButton(
-                    text="👥 دعوت دوستان",
-                    callback_data="invite"
-                )
-            ],
-
-
-            [
-                InlineKeyboardButton(
-                    text="☎️ پشتیبانی",
+                    text="🎧 پشتیبانی",
                     callback_data="support"
                 )
             ]
@@ -58,128 +49,37 @@ def main_menu():
         ]
     )
 
-    return keyboard
-
-
-
-
-
-# =========================
-# انتخاب محصول
-# =========================
-
-
-def products_menu():
-
-
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[
-
-
-            [
-                InlineKeyboardButton(
-                    text="💵 ووچر 10 دلاری",
-                    callback_data="voucher_10"
-                )
-            ],
-
-
-            [
-                InlineKeyboardButton(
-                    text="💵 ووچر 25 دلاری",
-                    callback_data="voucher_25"
-                )
-            ],
-
-
-            [
-                InlineKeyboardButton(
-                    text="💵 ووچر 50 دلاری",
-                    callback_data="voucher_50"
-                )
-            ],
-
-
-            [
-                InlineKeyboardButton(
-                    text="🔙 بازگشت",
-                    callback_data="back"
-                )
-            ]
-
-        ]
-    )
-
-
-    return keyboard
-
-
-
-
-
-# =========================
-# پنل ادمین
-# =========================
 
 
 def admin_menu():
 
-
-    keyboard = InlineKeyboardMarkup(
-
+    return InlineKeyboardMarkup(
         inline_keyboard=[
 
-
             [
                 InlineKeyboardButton(
-                    text="📊 آمار ربات",
-                    callback_data="admin_stats"
+                    text="👑 مدیریت کاربران",
+                    callback_data="manage_users"
                 )
             ],
 
-
             [
                 InlineKeyboardButton(
-                    text="👥 کاربران",
-                    callback_data="admin_users"
-                )
-            ],
-
-
-            [
+                    text="🎁 ارسال ووچر",
+                    callback_data="send_voucher"
+                ),
                 InlineKeyboardButton(
-                    text="🎁 مدیریت ووچر",
-                    callback_data="admin_vouchers"
+                    text="📈 آمار فروش",
+                    callback_data="stats"
                 )
             ],
-
-
-            [
-                InlineKeyboardButton(
-                    text="💳 سفارش‌ها",
-                    callback_data="admin_orders"
-                )
-            ],
-
-
-            [
-                InlineKeyboardButton(
-                    text="📢 پیام همگانی",
-                    callback_data="admin_broadcast"
-                )
-            ],
-
 
             [
                 InlineKeyboardButton(
                     text="⚙️ تنظیمات",
-                    callback_data="admin_settings"
+                    callback_data="settings"
                 )
             ]
 
         ]
-
     )
-
-
-    return keyboard
