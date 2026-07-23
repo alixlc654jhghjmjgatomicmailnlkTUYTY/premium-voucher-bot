@@ -1,64 +1,105 @@
 import requests
-import hashlib
-import time
 
-from config import (
-    API_KEY,
-    API_SECRET,
-    API_URL
-)
+# =========================
+# تنظیمات API ووچر
+# =========================
 
+# آدرس API سایت ووچر
+API_URL = "https://api.premiummoney.com"
 
-
-def create_sign(data):
-
-    raw = API_SECRET + str(data)
-
-    return hashlib.sha256(
-        raw.encode()
-    ).hexdigest()
+# کلید API را اینجا بگذار
+API_KEY = "5hnzarlmxklp5atafzld2jaec0z6lzhv2erogdrgkycw1bb1omdu4vgnzql3ofl4ا"
 
 
+# =========================
+# هدر درخواست
+# =========================
 
-
-
-def buy_voucher(amount):
-
-    payload = {
-
-        "amount": amount,
-
-        "currency": "USD",
-
-        "timestamp": int(time.time())
-
-    }
+headers = {
+    "Authorization": f"Bearer {API_KEY}",
+    "Content-Type": "application/json"
+}
 
 
 
-    headers = {
+# =========================
+# گرفتن موجودی حساب
+# =========================
 
-        "API-Key": API_KEY,
+def get_balance():
 
-        "Signature": create_sign(payload),
+    try:
 
-        "Content-Type": "application/json"
+        response = requests.get(
+            f"{API_URL}/balance",
+            headers=headers
+        )
 
-    }
+        data = response.json()
+
+        return data
 
 
+    except Exception as e:
+
+        return {
+            "error": str(e)
+        }
+
+
+
+# =========================
+# ساخت ووچر
+# =========================
+
+def create_voucher(amount):
+
+    try:
+
+        payload = {
+
+            "amount": amount
+
+        }
+
+
+        response = requests.post(
+            f"{API_URL}/voucher/create",
+            json=payload,
+            headers=headers
+        )
+
+
+        return response.json()
+
+
+    except Exception as e:
+
+        return {
+
+            "error": str(e)
+
+        }
+
+
+
+# =========================
+# بررسی ووچر
+# =========================
+
+def check_voucher(code):
 
     try:
 
         response = requests.post(
 
-            API_URL,
+            f"{API_URL}/voucher/check",
 
-            json=payload,
+            json={
+                "code": code
+            },
 
-            headers=headers,
-
-            timeout=30
+            headers=headers
 
         )
 
@@ -66,14 +107,10 @@ def buy_voucher(amount):
         return response.json()
 
 
-
-    except Exception as error:
-
+    except Exception as e:
 
         return {
 
-            "success": False,
-
-            "message": str(error)
+            "error": str(e)
 
         }
